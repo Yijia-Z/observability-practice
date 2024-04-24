@@ -1,28 +1,18 @@
-const { JaegerExporter } = require("@opentelemetry/exporter-jaeger");
 const { Resource } = require("@opentelemetry/resources");
-const {
-    SemanticResourceAttributes,
-} = require("@opentelemetry/semantic-conventions");
-const { SimpleSpanProcessor } = require("@opentelemetry/sdk-trace-base");
+const { SemanticResourceAttributes } = require("@opentelemetry/semantic-conventions");
+const { BatchSpanProcessor } = require("@opentelemetry/sdk-trace-base");
 const { NodeTracerProvider } = require("@opentelemetry/sdk-trace-node");
 const { trace } = require("@opentelemetry/api");
-
-//Instrumentations
-const {
-    ExpressInstrumentation,
-} = require("opentelemetry-instrumentation-express");
-const {
-    MongoDBInstrumentation,
-} = require("@opentelemetry/instrumentation-mongodb");
+const { ExpressInstrumentation } = require("opentelemetry-instrumentation-express");
+const { MongoDBInstrumentation } = require("@opentelemetry/instrumentation-mongodb");
 const { HttpInstrumentation } = require("@opentelemetry/instrumentation-http");
 const { registerInstrumentations } = require("@opentelemetry/instrumentation");
+const { JaegerExporter } = require("@opentelemetry/exporter-jaeger");
 
-//Exporter
 module.exports = (serviceName) => {
     const exporter = new JaegerExporter({
-        host: 'localhost', // The Jaeger agent host
-        port: 6832, // The Jaeger agent port
-        maxPayloadSizeBytes: 65000, // Maximum payload size for a single batch of spans
+        endpoint: 'http://localhost:14268/api/traces',
+        serviceName: serviceName,
     });
 
     const provider = new NodeTracerProvider({
@@ -31,7 +21,7 @@ module.exports = (serviceName) => {
         }),
     });
 
-    provider.addSpanProcessor(new SimpleSpanProcessor(exporter));
+    provider.addSpanProcessor(new BatchSpanProcessor(exporter));
     provider.register();
 
     registerInstrumentations({
